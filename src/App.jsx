@@ -1,8 +1,7 @@
 import { useEffect, useState } from 'react'
 import { supabase } from './supabaseClient'
 import AssistantProfilePage from './pages/AssistantProfilePage'
-import AssistantsPage from './pages/AssistantsPage'"
-
+import AssistantsPage from './pages/AssistantsPage'
 import HomePage from './pages/HomePage'
 import CentresPage from './pages/CentresPage'
 import StudentsPage from './pages/StudentsPage'
