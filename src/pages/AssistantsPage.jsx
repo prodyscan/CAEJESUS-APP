@@ -9,6 +9,7 @@ export default function AssistantsPage({ profile }) {
   const [filterClassId, setFilterClassId] = useState('all')
   const [message, setMessage] = useState('')
   const [selectedAssistant, setSelectedAssistant] = useState(null)
+  const [creatingAssistant, setCreatingAssistant] = useState(false)
 
   useEffect(() => {
     loadData()
@@ -19,7 +20,7 @@ export default function AssistantsPage({ profile }) {
 
     const { data: classesData, error: classesError } = await supabase
       .from('classes')
-      .select('id, nom, annee')
+      .select('id, nom, annee, ville')
       .order('nom', { ascending: true })
 
     if (classesError) {
@@ -45,8 +46,11 @@ export default function AssistantsPage({ profile }) {
   }
 
   function getClassLabel(classId) {
+    if (!classId) return 'Aucun centre'
+
     const classe = classes.find((c) => String(c.id) === String(classId))
-    if (!classe) return '-'
+    if (!classe) return 'Centre inconnu'
+
     return `${classe.nom} - ${classe.annee}ère année`
   }
 
@@ -72,7 +76,9 @@ export default function AssistantsPage({ profile }) {
   const filteredAssistants = useMemo(() => {
     let result = assistants
 
-    if (filterClassId !== 'all') {
+    if (filterClassId === 'none') {
+      result = result.filter((item) => !item.class_id)
+    } else if (filterClassId !== 'all') {
       result = result.filter(
         (item) => String(item.class_id || '') === String(filterClassId)
       )
@@ -100,6 +106,20 @@ export default function AssistantsPage({ profile }) {
     })
   }, [assistants, search, filterClassId, classes])
 
+  if (creatingAssistant) {
+    return (
+      <AssistantProfilePage
+        profile={profile}
+        assistantId={null}
+        classId={null}
+        onBack={() => {
+          setCreatingAssistant(false)
+          loadData()
+        }}
+      />
+    )
+  }
+
   if (selectedAssistant) {
     return (
       <AssistantProfilePage
@@ -117,7 +137,15 @@ export default function AssistantsPage({ profile }) {
   return (
     <div style={styles.page}>
       <div style={styles.card}>
-        <h2 style={styles.title}>Assistants enregistrés</h2>
+        <h2 style={styles.title}>Assistants</h2>
+
+        <button
+          type="button"
+          style={styles.primaryButtonFull}
+          onClick={() => setCreatingAssistant(true)}
+        >
+          Ajouter un assistant
+        </button>
 
         <select
           style={styles.input}
@@ -125,6 +153,7 @@ export default function AssistantsPage({ profile }) {
           onChange={(e) => setFilterClassId(e.target.value)}
         >
           <option value="all">Tous les centres</option>
+          <option value="none">Sans centre</option>
           {classes.map((classe) => (
             <option key={classe.id} value={classe.id}>
               {classe.nom} - {classe.annee}ère année
@@ -139,11 +168,16 @@ export default function AssistantsPage({ profile }) {
           onChange={(e) => setSearch(e.target.value)}
         />
 
+        <p style={styles.resultText}>
+          {filteredAssistants.length} résultat
+          {filteredAssistants.length > 1 ? 's' : ''}
+        </p>
+
         {message ? <p style={styles.message}>{message}</p> : null}
       </div>
 
       <div style={styles.card}>
-        <h3 style={styles.sectionTitle}>Liste</h3>
+        <h3 style={styles.sectionTitle}>Liste des assistants</h3>
 
         {filteredAssistants.length === 0 ? (
           <p>Aucun assistant enregistré.</p>
@@ -201,6 +235,7 @@ const styles = {
     background: '#f7f1fb',
     minHeight: '100vh',
   },
+
   card: {
     background: '#fff',
     border: '2px solid #e3d8f5',
@@ -209,6 +244,7 @@ const styles = {
     marginBottom: 20,
     boxShadow: '0 8px 18px rgba(43, 10, 120, 0.08)',
   },
+
   title: {
     marginTop: 0,
     marginBottom: 16,
@@ -217,6 +253,7 @@ const styles = {
     fontSize: 32,
     fontWeight: 'bold',
   },
+
   sectionTitle: {
     marginTop: 0,
     marginBottom: 16,
@@ -225,6 +262,7 @@ const styles = {
     fontSize: 24,
     fontWeight: 'bold',
   },
+
   input: {
     width: '100%',
     padding: 14,
@@ -235,6 +273,27 @@ const styles = {
     boxSizing: 'border-box',
     background: '#fff',
   },
+
+  primaryButtonFull: {
+    width: '100%',
+    padding: 14,
+    borderRadius: 12,
+    border: 'none',
+    background: 'linear-gradient(90deg, #2b0a78 0%, #d4148e 100%)',
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: 'bold',
+    marginBottom: 12,
+  },
+
+  resultText: {
+    marginTop: 4,
+    marginBottom: 0,
+    textAlign: 'center',
+    color: '#6f5b84',
+    fontWeight: 'bold',
+  },
+
   message: {
     marginTop: 14,
     fontWeight: 'bold',
@@ -242,6 +301,7 @@ const styles = {
     textAlign: 'center',
     fontSize: 18,
   },
+
   itemCard: {
     border: '1px solid #eadcf9',
     borderRadius: 14,
@@ -249,21 +309,25 @@ const styles = {
     marginBottom: 12,
     background: '#fff',
   },
+
   name: {
     color: '#2b0a78',
     fontSize: 20,
   },
+
   meta: {
     margin: '6px 0',
     color: '#666',
     wordBreak: 'break-word',
   },
+
   row: {
     display: 'flex',
     gap: 10,
     marginTop: 12,
     flexWrap: 'wrap',
   },
+
   viewButton: {
     flex: 1,
     padding: '10px 14px',
@@ -274,6 +338,7 @@ const styles = {
     fontSize: 14,
     fontWeight: 'bold',
   },
+
   editButton: {
     flex: 1,
     padding: '10px 14px',
@@ -284,6 +349,7 @@ const styles = {
     fontSize: 14,
     fontWeight: 'bold',
   },
+
   deleteButton: {
     flex: 1,
     padding: '10px 14px',

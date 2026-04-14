@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { supabase } from '../supabaseClient'
 
 const emptyForm = {
+  class_id: '',
   nom: '',
   sexe: '',
   ministere: '',
@@ -20,23 +21,43 @@ export default function AssistantProfilePage({
   onBack = null,
 }) {
   const [form, setForm] = useState(emptyForm)
+  const [classes, setClasses] = useState([])
   const [message, setMessage] = useState('')
   const [loading, setLoading] = useState(false)
   const [loadingData, setLoadingData] = useState(true)
   const [resolvedAssistantId, setResolvedAssistantId] = useState(null)
   const [isEditing, setIsEditing] = useState(false)
 
-  const isAdmin = profile?.role === 'admin'
+  useEffect(() => {
+    loadClasses()
+  }, [])
 
   useEffect(() => {
     init()
   }, [assistantId, classId])
 
+  async function loadClasses() {
+    const { data, error } = await supabase
+      .from('classes')
+      .select('id, nom, annee, ville')
+      .order('nom', { ascending: true })
+
+    if (error) {
+      console.log(error)
+      return
+    }
+
+    setClasses(data || [])
+  }
+
   async function init() {
     setLoadingData(true)
     setMessage('')
     setResolvedAssistantId(null)
-    setForm(emptyForm)
+    setForm({
+      ...emptyForm,
+      class_id: classId || '',
+    })
 
     if (assistantId) {
       await loadAssistantById(assistantId)
@@ -63,7 +84,7 @@ export default function AssistantProfilePage({
 
     if (error) {
       console.log(error)
-      setMessage("Erreur chargement profil assistant")
+      setMessage('Erreur chargement profil assistant')
       setIsEditing(true)
       return
     }
@@ -87,7 +108,7 @@ export default function AssistantProfilePage({
 
     if (error) {
       console.log(error)
-      setMessage("Erreur chargement profil assistant")
+      setMessage('Erreur chargement profil assistant')
       setIsEditing(true)
       return
     }
@@ -98,12 +119,16 @@ export default function AssistantProfilePage({
       return
     }
 
-    setForm(emptyForm)
+    setForm({
+      ...emptyForm,
+      class_id: targetClassId || '',
+    })
     setIsEditing(true)
   }
 
   function fillForm(data) {
     setForm({
+      class_id: data?.class_id || '',
       nom: data?.nom || '',
       sexe: data?.sexe || '',
       ministere: data?.ministere || '',
@@ -133,9 +158,33 @@ export default function AssistantProfilePage({
 
     setLoading(true)
 
+    const nomNettoye = form.nom.trim()
+
+    const { data: existingAssistants, error: existingError } = await supabase
+      .from('assistant_profiles')
+      .select('id')
+      .eq('nom', nomNettoye)
+
+    if (existingError) {
+      console.log(existingError)
+      setLoading(false)
+      setMessage("Erreur vérification assistant")
+      return
+    }
+
+    const duplicate = (existingAssistants || []).find(
+      (item) => String(item.id) !== String(resolvedAssistantId || '')
+    )
+
+    if (duplicate) {
+      setLoading(false)
+      setMessage('Cet assistant existe déjà')
+      return
+    }
+
     const payload = {
-      class_id: classId || null,
-      nom: form.nom.trim(),
+      class_id: form.class_id || classId || null,
+      nom: nomNettoye,
       sexe: form.sexe || null,
       ministere: form.ministere.trim() || null,
       date_formation: form.date_formation || null,
@@ -174,18 +223,25 @@ export default function AssistantProfilePage({
 
     if (error) {
       console.log(error)
-      setMessage('Erreur enregistrement profil assistant')
+      setMessage(
+        resolvedAssistantId
+          ? 'Erreur modification profil assistant'
+          : 'Erreur création profil assistant'
+      )
       return
     }
 
     if (data) {
       setResolvedAssistantId(data.id)
       fillForm(data)
-    } else {
-      setIsEditing(false)
     }
 
-    setMessage(resolvedAssistantId ? 'Profil modifié' : 'Profil créé')
+    setIsEditing(false)
+    setMessage(
+      resolvedAssistantId
+        ? 'Profil assistant modifié'
+        : 'Profil assistant créé'
+    )
   }
 
   const fieldsDisabled = !!resolvedAssistantId && !isEditing
@@ -226,6 +282,21 @@ export default function AssistantProfilePage({
         </h2>
 
         <form onSubmit={saveProfile}>
+          <select
+            style={styles.input}
+            name="class_id"
+            value={form.class_id || ''}
+            onChange={handleChange}
+            disabled={fieldsDisabled}
+          >
+            <option value="">Aucun centre (optionnel)</option>
+            {classes.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.nom} - {c.ville || '-'}
+              </option>
+            ))}
+          </select>
+
           <input
             style={styles.input}
             name="nom"
@@ -323,7 +394,7 @@ export default function AssistantProfilePage({
           )}
 
           {(!resolvedAssistantId || isEditing) && (
-            <button style={styles.button} disabled={loading}>
+            <button type="submit" style={styles.button} disabled={loading}>
               {loading
                 ? 'Enregistrement...'
                 : resolvedAssistantId
@@ -338,6 +409,14 @@ export default function AssistantProfilePage({
 
       <div style={styles.card}>
         <h3 style={styles.sectionTitle}>Aperçu</h3>
+
+        <div style={styles.detailRow}>
+          <span style={styles.label}>Centre</span>
+          <span style={styles.value}>
+            {classes.find((c) => String(c.id) === String(form.class_id))?.nom ||
+              'Aucun centre'}
+          </span>
+        </div>
 
         <div style={styles.detailRow}>
           <span style={styles.label}>Nom</span>
