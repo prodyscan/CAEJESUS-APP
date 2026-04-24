@@ -122,14 +122,18 @@ export default function ClassesPage({ profile }) {
       setMessage('La ville est obligatoire')
       return
     }
+    const generatedAssistantCode = (form.assistant_code || '').trim()
+    const generatedAssistantPassword = (form.assistant_password || '').trim()
 
-    const generatedAssistantCode = editingId
-      ? form.assistant_code.trim()
-      : generateNextAssistantCode(classes)
+    if (!generatedAssistantCode) {
+      setMessage('Le code du Centre est obligatoire')
+      return
+    }
 
-    const generatedAssistantPassword = editingId
-      ? form.assistant_password.trim()
-      : generateNextAssistantPassword(classes, form.ville)
+    if (!generatedAssistantPassword) {
+      setMessage('Le mot de passe assistant est obligatoire')
+      return
+    }
 
     const duplicate = classes.find((c) => {
       if (editingId && String(c.id) === String(editingId)) return false
@@ -148,7 +152,7 @@ export default function ClassesPage({ profile }) {
       }
 
       if ((duplicate.assistant_code || '').trim() === generatedAssistantCode) {
-        setMessage('Ce code assistant existe déjà')
+        setMessage('Ce code du Centre existe déjà')
         return
       }
     }
@@ -189,7 +193,7 @@ export default function ClassesPage({ profile }) {
       const errorMessage = error.message?.toLowerCase() || ''
 
       if (errorMessage.includes('assistant_code')) {
-        setMessage('Ce code assistant existe déjà')
+        setMessage('Ce code du Centre existe déjà')
         return
       }
 
@@ -389,26 +393,30 @@ export default function ClassesPage({ profile }) {
           <input
             style={styles.input}
             name="assistant_code"
-            placeholder="Code assistant"
-            value={
-              editingId
-                ? form.assistant_code
-                : generateNextAssistantCode(classes)
+            placeholder="Code du Centre"
+            value={form.assistant_code || ''}
+            onChange={(e) =>
+              setForm((prev) => ({
+                ...prev,
+                assistant_code: e.target.value,
+              }))
             }
-            readOnly
           />
 
           <input
             style={styles.input}
             name="assistant_password"
             placeholder="Mot de passe assistant"
-            value={
-              editingId
-                ? form.assistant_password
-                : generateNextAssistantPassword(classes, form.ville)
+            value={form.assistant_password || ''}
+            onChange={(e) =>
+              setForm((prev) => ({
+                ...prev,
+                assistant_password: e.target.value,
+              }))
             }
-            readOnly
           />
+
+
 
           <button
             style={styles.primaryButtonFull}
@@ -464,7 +472,7 @@ export default function ClassesPage({ profile }) {
               <p style={styles.meta}>Pays : {classe.pays || '-'}</p>
               <p style={styles.meta}>Ville : {classe.ville || '-'}</p>
               <p style={styles.meta}>
-                Code assistant : {classe.assistant_code || '-'}
+                Code du Centre : {classe.assistant_code || '-'}
               </p>
               <p style={styles.meta}>
                 Mot de passe assistant : {classe.assistant_password || '-'}
