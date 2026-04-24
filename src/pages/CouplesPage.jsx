@@ -42,23 +42,28 @@ export default function CouplesPage({ profile }) {
     setStudents(data || [])
   }
 
+
   async function getCouples() {
     const { data, error } = await supabase
       .from('couples')
       .select('*')
       .order('created_at', { ascending: false })
 
+    console.log('DATA:', data)
+    console.log('ERROR:', error)
+
     if (error) {
-      console.log(error)
       setMessage('Erreur chargement couples')
       return
     }
 
+    // ADMIN → voit tout
     if (isAdmin) {
       setCouples(data || [])
       return
     }
 
+    // ASSISTANT → filtre selon ses étudiants
     const filtered = (data || []).filter((couple) => {
       const ids = [couple.student1_id, couple.student2_id]
       return students.some((s) => ids.includes(s.id))
@@ -68,7 +73,7 @@ export default function CouplesPage({ profile }) {
   }
 
   useEffect(() => {
-    if (!isAdmin && students.length > 0) {
+    if (isAdmin || students.length > 0) {
       getCouples()
     }
   }, [students])
