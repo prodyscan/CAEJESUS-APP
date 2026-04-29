@@ -478,6 +478,16 @@ export default function RattrapagesPage({ profile }) {
     getRattrapages()
   }
 
+
+// Commentaire
+  function getAnneeLabel(annee) {
+    const n = Number(annee)
+    if (n === 1) return '1ère année'
+    if (n === 2) return '2ème année'
+    if (n === 3) return '3ème année'
+    return `${n}ème année`
+  }
+
   async function deleteRattrapage(id) {
     const ok = window.confirm('Supprimer ce rattrapage ?')
     if (!ok) return
@@ -511,7 +521,7 @@ export default function RattrapagesPage({ profile }) {
             <option value="all">Tous les centres</option>
             {classes.map((classe) => (
               <option key={classe.id} value={classe.id}>
-                {classe.nom} - {classe.annee}ère année
+                {classe.nom} -{getAnneeLabel(classe.annee)}
               </option>
             ))}
           </select>

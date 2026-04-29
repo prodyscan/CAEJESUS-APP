@@ -143,6 +143,7 @@ export default function SeancesPage({ profile }) {
   const [selectedSeances, setSelectedSeances] = useState([])
   const [seanceSearch, setSeanceSearch] = useState('')
 
+
   const isAdmin = profile?.role === 'admin'
   const assistantClassId =
     profile?.role === 'assistant' ? profile?.class_id : null
@@ -159,17 +160,26 @@ export default function SeancesPage({ profile }) {
   }, [classes, finalClassId])
 
   const filteredSeances = useMemo(() => {
-    const query = searchSeance.trim().toLowerCase()
-
-    if (!query) return seances
-
     return seances.filter((s) => {
+      const selectedCentreId = isAdmin ? form.class_id : assistantClassId
+
+      if (
+        selectedCentreId &&
+        String(s.class_id) !== String(selectedCentreId)
+      ) {
+        return false
+      }
+
+      const query = searchSeance.trim().toLowerCase()
+      if (!query) return true
+
       const seanceText = (s.chapitre || '').toLowerCase()
       const centre = (s.classes?.nom || '').toLowerCase()
 
       return seanceText.includes(query) || centre.includes(query)
     })
-  }, [seances, searchSeance])
+  }, [seances, searchSeance, form.class_id, isAdmin, assistantClassId])
+
 
   const availableSeances = useMemo(() => {
     return getSeancesByYear(selectedClass?.annee)
@@ -177,6 +187,7 @@ export default function SeancesPage({ profile }) {
 
   const filteredAvailableSeances = useMemo(() => {
     const query = seanceSearch.trim().toLowerCase()
+
     if (!query) return availableSeances
 
     return availableSeances.filter((item) =>
@@ -542,6 +553,8 @@ export default function SeancesPage({ profile }) {
                 Séances de {selectedClass.annee}e année
               </p>
 
+
+
               <input
                 style={styles.input}
                 placeholder="Rechercher une séance..."
@@ -620,7 +633,7 @@ export default function SeancesPage({ profile }) {
           onChange={(e) => setSearchSeance(e.target.value)}
         />
 
-        {seances.length === 0 ? (
+        {filteredSeances.length === 0 ? (
           <p>Aucune séance enregistrée.</p>
         ) : (
           filteredSeances.map((seance) => (

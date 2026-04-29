@@ -51,9 +51,18 @@ export default function AssistantsPage({ profile }) {
     const classe = classes.find((c) => String(c.id) === String(classId))
     if (!classe) return 'Centre inconnu'
 
-    return `${classe.nom} - ${classe.annee}ère année`
+    return `${classe.nom} - ${getAnneeLabel(classe.annee)}`
   }
 
+
+// Commentaire
+  function getAnneeLabel(annee) {
+    const n = Number(annee)
+    if (n === 1) return '1ère année'
+    if (n === 2) return '2ème année'
+    if (n === 3) return '3ème année'
+    return `${n}ème année`
+  }
   async function deleteAssistant(id) {
     const ok = window.confirm('Supprimer cet assistant ?')
     if (!ok) return
@@ -156,7 +165,7 @@ export default function AssistantsPage({ profile }) {
           <option value="none">Sans centre</option>
           {classes.map((classe) => (
             <option key={classe.id} value={classe.id}>
-              {classe.nom} - {classe.annee}ère année
+              {classe.nom} - {getAnneeLabel(classe.annee)}
             </option>
           ))}
         </select>

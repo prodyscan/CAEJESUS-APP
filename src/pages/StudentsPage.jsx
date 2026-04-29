@@ -35,6 +35,7 @@ export default function StudentsPage({ profile }) {
   const [certificatDate, setCertificatDate] = useState('')
   const [menuPosition, setMenuPosition] = useState({ top: 0, left: 0 })
   const certificatBoxRef = useRef(null)
+  const [filterClassId, setFilterClassId] = useState('all')
 
   const [showSmsPanel, setShowSmsPanel] = useState(false)
   const [smsFilter, setSmsFilter] = useState('tous')
@@ -788,7 +789,15 @@ export default function StudentsPage({ profile }) {
     getStudents()
   }
 
+
   const filteredStudents = students.filter((student) => {
+    if (
+      filterClassId !== 'all' &&
+      String(student.class_id) !== String(filterClassId)
+    ) {
+      return false
+    }
+
     const query = search.trim().toLowerCase()
 
     const fullName = `${student.nom || ''} ${student.prenom || ''}`.toLowerCase()
@@ -1241,7 +1250,23 @@ export default function StudentsPage({ profile }) {
           </div>
         )}
 
-
+        {isAdmin && (
+          <select
+            style={styles.input}
+            value={filterClassId}
+            onChange={(e) => {
+              setFilterClassId(e.target.value)
+              setSelectedStudentIds([])
+            }}
+          >
+            <option value="all">Tous les centres</option>
+            {classes.map((classe) => (
+              <option key={classe.id} value={classe.id}>
+                {classe.nom} - {getAnneeLabel(classe.annee)}
+              </option>
+            ))}
+          </select>
+        )}
 
         <input
           style={styles.input}
